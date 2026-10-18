@@ -1,0 +1,42 @@
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, UserRound } from 'lucide-react';
+
+import AdminLayout from '@/layouts/AdminLayout';
+import type { Partylist, Position } from '@/lib/candidates';
+
+import PartylistCandidateForm from './PartylistCandidateForm';
+
+interface Props {
+    partylist: Partylist;
+    positions: Position[];
+}
+
+export default function Create({ partylist, positions }: Props) {
+    return (
+        <AdminLayout>
+            <Head title={`Add Candidate - ${partylist.partylist_name}`} />
+
+            <div className="mx-auto max-w-3xl space-y-6">
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={`/admin/partylists/${partylist.id}/candidates`}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1B4332] text-white shadow-sm"
+                    >
+                        <ArrowLeft size={20} />
+                    </Link>
+
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Add Candidate</h1>
+
+                        <p className="mt-0.5 flex items-center gap-1 text-sm text-gray-500">
+                            <UserRound size={13} />
+                            {partylist.partylist_name}
+                        </p>
+                    </div>
+                </div>
+
+                <PartylistCandidateForm mode="create" partylist={partylist} positions={positions} />
+            </div>
+        </AdminLayout>
+    );
+}
