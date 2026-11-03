@@ -7,6 +7,7 @@ use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\Organization;
 use App\Models\Partylist;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -150,7 +151,7 @@ class PartylistController extends Controller
     /**
      * Persist a new partylist.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate($this->rules());
 
@@ -158,6 +159,10 @@ class PartylistController extends Controller
         $this->storeBanner($request, $validated);
 
         Partylist::create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()
             ->route('admin.partylists.index')
@@ -195,7 +200,7 @@ class PartylistController extends Controller
     public function update(
         Request $request,
         Partylist $partylist
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $validated = $request->validate($this->rules());
 
         if ($request->hasFile('logo')) {
@@ -204,6 +209,8 @@ class PartylistController extends Controller
             }
 
             $this->storeLogo($request, $validated);
+        } else {
+            unset($validated['logo']);
         }
 
         if ($request->hasFile('banner')) {
@@ -212,9 +219,15 @@ class PartylistController extends Controller
             }
 
             $this->storeBanner($request, $validated);
+        } else {
+            unset($validated['banner']);
         }
 
         $partylist->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()
             ->route('admin.partylists.index')
@@ -224,7 +237,7 @@ class PartylistController extends Controller
     /**
      * Delete a partylist and its uploaded files.
      */
-    public function destroy(Partylist $partylist): RedirectResponse
+    public function destroy(Partylist $partylist): RedirectResponse|JsonResponse
     {
         if ($partylist->logo) {
             Storage::disk('public')->delete($partylist->logo);
@@ -235,6 +248,10 @@ class PartylistController extends Controller
         }
 
         $partylist->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()
             ->route('admin.partylists.index')

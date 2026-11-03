@@ -68,6 +68,9 @@ class LoginRequest extends FormRequest
 
         if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
 
+            // Email addresses are case-insensitive; PostgreSQL comparisons are not.
+            $login = Str::lower($login);
+
             $credentials = [
                 'email' => $login,
                 'password' => $password,

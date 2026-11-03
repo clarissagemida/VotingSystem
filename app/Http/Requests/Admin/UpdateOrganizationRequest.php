@@ -21,9 +21,11 @@ class UpdateOrganizationRequest extends FormRequest
      */
     public function rules(): array
     {
+        $type = $this->input('type');
+
         return [
             'name' => [
-                'required',
+                $type === 'OTHER' ? 'required' : 'nullable',
                 'string',
                 'max:255',
             ],

@@ -9,6 +9,8 @@ use App\Models\AuditLog;
 use App\Models\Election;
 use App\Models\ElectionVoter;
 use App\Models\User;
+use App\Support\ElectionResults;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +19,13 @@ use Inertia\Response;
 
 class ElectionController extends Controller
 {
+    public function liveData(Election $election, ElectionResults $results): JsonResponse
+    {
+        $data = $results->forElection($election);
+
+        return response()->json($data, 200, ['Cache-Control' => 'no-store, private']);
+    }
+
     /**
      * Display a listing of elections.
      */
@@ -79,7 +88,7 @@ class ElectionController extends Controller
      */
     public function store(
         StoreElectionRequest $request
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
 
         DB::transaction(function () use ($request) {
 
@@ -116,12 +125,16 @@ class ElectionController extends Controller
             );
         });
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
         return redirect()
             ->route('admin.elections.index')
             ->with(
                 'success',
                 'Election created successfully.'
-            );
+            )->with('adminAlert', ['title' => 'Election Added', 'message' => 'Election created successfully.', 'type' => 'success']);
     }
 
     /**
@@ -130,7 +143,8 @@ class ElectionController extends Controller
      * Also provides the eligible voters for this election.
      */
     public function show(
-        Election $election
+        Election $election,
+        ElectionResults $results
     ): Response {
 
         /*
@@ -181,8 +195,7 @@ class ElectionController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $eligibleVoterCount =
-            $eligibleVoters->count();
+        $eligibleVoterCount = $eligibleVoters->count();
 
         /*
         |--------------------------------------------------------------------------
@@ -190,11 +203,25 @@ class ElectionController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $votersWhoVoted =
-            $election->votes()
-                ->whereNotNull('voter_id')
-                ->distinct('voter_id')
-                ->count('voter_id');
+        $resultData = $results->forElection($election);
+        $votersWhoVoted = $resultData['participated'];
+        $resultsVisible = $election->status === 'Completed';
+        $positions = $resultData['positions']->map(fn ($position) => [
+            'name' => $position['position'],
+            'organization' => $position['organization'],
+            'participating' => $position['total_votes'],
+            'eligible' => $eligibleVoterCount,
+            'progress' => $eligibleVoterCount > 0 ? round($position['total_votes'] / $eligibleVoterCount * 100, 1) : 0,
+            'candidates' => $resultsVisible ? $position['candidates']->map(fn ($candidate) => [
+                'name' => $candidate['name'],
+                'photo' => $candidate['photo'],
+                'designation' => $candidate['type'] === 'independent' ? 'Independent' : $candidate['partylist'],
+                'votes' => $candidate['votes'],
+                'percentage' => $candidate['percentage'],
+                'rank' => $candidate['rank'],
+                'tied' => $candidate['tied'],
+            ]) : [],
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -259,6 +286,14 @@ class ElectionController extends Controller
                 'votersWhoVoted' => $votersWhoVoted,
 
                 'turnout' => $turnout,
+
+                'notYetParticipated' => max(0, $eligibleVoterCount - $votersWhoVoted),
+
+                'positions' => $positions,
+
+                'resultsVisible' => $resultsVisible,
+
+                'lastRefreshedAt' => now()->toIso8601String(),
             ]
         );
     }
@@ -302,7 +337,7 @@ class ElectionController extends Controller
     public function update(
         UpdateElectionRequest $request,
         Election $election
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
 
         /*
         |--------------------------------------------------------------------------
@@ -361,12 +396,16 @@ class ElectionController extends Controller
             );
         });
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
         return redirect()
             ->route('admin.elections.index')
             ->with(
                 'success',
                 'Election updated successfully.'
-            );
+            )->with('adminAlert', ['title' => 'Election Updated', 'message' => 'Election updated successfully.', 'type' => 'success']);
     }
 
     /**
@@ -374,7 +413,7 @@ class ElectionController extends Controller
      */
     public function destroy(
         Election $election
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
 
         /*
         |--------------------------------------------------------------------------
@@ -387,6 +426,10 @@ class ElectionController extends Controller
         */
 
         if ($election->status === 'Ongoing') {
+            if (request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'An ongoing election cannot be deleted.'], 422);
+            }
+
             return back()
                 ->with(
                     'error',
@@ -420,6 +463,10 @@ class ElectionController extends Controller
 
             $election->delete();
         });
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()
             ->route('admin.elections.index')

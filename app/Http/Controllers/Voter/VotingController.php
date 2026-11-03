@@ -26,6 +26,12 @@ class VotingController extends Controller
     ) {
         $user = $request->user();
 
+        abort_unless(
+            $election->eligibleVoters()->where('voter_id', $user->id)->exists(),
+            403,
+            'You are not eligible to vote in this election.'
+        );
+
         /*
          * Check if voter has already voted in this election.
          * If they have, prevent them from voting again and redirect to their vote history.
@@ -120,6 +126,12 @@ class VotingController extends Controller
         Election $election
     ) {
         $user = $request->user();
+
+        abort_unless(
+            $election->eligibleVoters()->where('voter_id', $user->id)->exists(),
+            403,
+            'You are not eligible to vote in this election.'
+        );
 
         /*
          * Make sure election is ongoing.

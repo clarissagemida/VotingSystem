@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { Bell, ChevronDown, LogOut, ShieldCheck } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, ShieldCheck, UserRound } from 'lucide-react';
 
 import {
     DropdownMenu,
@@ -50,15 +50,6 @@ export default function Header() {
             },
         );
     };
-    const initials =
-        user?.name
-            ?.trim()
-            .split(/\s+/)
-            .map((part) => part.charAt(0))
-            .slice(0, 2)
-            .join('')
-            .toUpperCase() || 'V';
-
     return (
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200/80 bg-white/80 px-6 shadow-sm backdrop-blur-sm lg:px-8">
             {/* =========================================================
@@ -108,8 +99,8 @@ export default function Header() {
                     <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-xl p-1.5 transition-all duration-200 hover:bg-gray-100/80 focus-visible:ring-2 focus-visible:ring-green-600/30 focus-visible:outline-none">
                         {/* Avatar */}
 
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#1B4332] text-xs font-bold text-white shadow-sm ring-2 ring-white">
-                            {initials}
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2D6A4F] to-[#1B4332] text-white shadow-sm ring-2 ring-white">
+                            <UserRound className="h-5 w-5" aria-hidden="true" />
                         </div>
 
                         {/* User Information */}

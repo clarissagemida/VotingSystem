@@ -461,6 +461,7 @@ class AnalyticsController extends Controller
             ->with([
                 'election:id,title',
                 'partylist:id,partylist_name,acronym,color',
+                'organization:id,name',
             ]);
 
         if ($selectedElectionId) {
@@ -611,6 +612,10 @@ class AnalyticsController extends Controller
                             'id' => $candidate->id,
 
                             'name' => $candidate->candidate_name,
+
+                            'organization_id' => $candidate->organization_id,
+
+                            'organization_name' => $candidate->organization?->name,
 
                             'type' => $candidate->candidate_type ===
                                 'independent'

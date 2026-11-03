@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreVoterRequest;
 use App\Http\Requests\Admin\UpdateVoterRequest;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,10 +48,18 @@ class VoterController extends Controller
     /**
      * Show the form for editing a voter.
      */
-    public function edit(User $voter): Response
+    public function edit(User $voter): Response|JsonResponse
     {
         if ($voter->role !== 'voter') {
             abort(403, 'Only voter accounts can be edited.');
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'id' => $voter->id,
+                'name' => $voter->name,
+                'username' => $voter->username,
+            ]);
         }
 
         return Inertia::render('AdminSide/Voters/Edit', [
@@ -69,7 +78,7 @@ class VoterController extends Controller
      * The username and password generated in the React
      * Create Voter modal are used directly here.
      */
-    public function store(StoreVoterRequest $request): RedirectResponse
+    public function store(StoreVoterRequest $request): RedirectResponse|JsonResponse
     {
         $username = $request->username;
         $password = $request->password;
@@ -82,13 +91,25 @@ class VoterController extends Controller
             'email' => null,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'voter' => [
+                    'name' => $voter->name,
+                    'username' => $username,
+                    'password' => $password,
+                ],
+            ]);
+        }
+
         return redirect()
             ->route('admin.voters.index')
             ->with('voterCreated', [
                 'name' => $voter->name,
                 'username' => $username,
                 'password' => $password,
-            ]);
+            ])
+            ->with('adminAlert', ['title' => 'Voter Added', 'message' => $voter->name.' was added successfully.', 'type' => 'success']);
     }
 
     /**
@@ -97,7 +118,7 @@ class VoterController extends Controller
     public function update(
         UpdateVoterRequest $request,
         User $voter
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         if ($voter->role !== 'voter') {
             abort(403, 'Only voter accounts can be updated.');
         }
@@ -109,12 +130,20 @@ class VoterController extends Controller
 
         $voter->save();
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'voter' => $voter->name,
+            ]);
+        }
+
         return redirect()
             ->route('admin.voters.index')
-            ->with('voterUpdated', $voter->name);
+            ->with('voterUpdated', $voter->name)
+            ->with('adminAlert', ['title' => 'Voter Updated', 'message' => $voter->name.' was updated successfully.', 'type' => 'success']);
     }
 
-    public function destroy(User $voter): RedirectResponse
+    public function destroy(User $voter): RedirectResponse|JsonResponse
     {
         if ($voter->role !== 'voter') {
             abort(403, 'Only voter accounts can be deleted.');
@@ -124,15 +153,23 @@ class VoterController extends Controller
 
         $voter->delete();
 
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'voter' => $name,
+            ]);
+        }
+
         return redirect()
             ->route('admin.voters.index')
-            ->with('voterDeleted', $name);
+            ->with('voterDeleted', $name)
+            ->with('adminAlert', ['title' => 'Voter Deleted', 'message' => $name.' was deleted successfully.', 'type' => 'success']);
     }
 
     /**
      * Reset voter password.
      */
-    public function resetPassword(User $voter): RedirectResponse
+    public function resetPassword(User $voter): RedirectResponse|JsonResponse
     {
         if ($voter->role !== 'voter') {
             abort(403, 'Only voter accounts can be reset.');
@@ -144,6 +181,15 @@ class VoterController extends Controller
         $voter->update([
             'password' => $password,
         ]);
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'name' => $voter->name,
+                'username' => $voter->username,
+                'password' => $password,
+            ]);
+        }
 
         return redirect()
             ->route('admin.voters.index')

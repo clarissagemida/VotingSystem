@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart3, Building2, ChevronRight, FileText, Flag, LayoutDashboard, UserCircle, Users, Vote } from 'lucide-react';
+import { Activity, BarChart3, Building2, ChevronRight, Flag, LayoutDashboard, Users, Vote } from 'lucide-react';
 
 const mainMenus = [
     {
@@ -21,6 +21,12 @@ const mainMenus = [
         href: '/admin/elections',
     },
     {
+        title: 'Live Voting',
+        icon: Activity,
+        routeName: 'admin.live-voting.index',
+        href: '/admin/live-voting',
+    },
+    {
         title: 'Organization',
         icon: Building2,
         routeName: 'admin.organizations.index',
@@ -36,22 +42,10 @@ const mainMenus = [
 
 const systemMenus = [
     {
-        title: 'Analytics',
+        title: 'Reports & Analytics',
         icon: BarChart3,
         routeName: 'admin.analytics.index',
         href: '/admin/analytics',
-    },
-    {
-        title: 'Reports',
-        icon: FileText,
-        routeName: 'admin.reports.index',
-        href: '/admin/reports',
-    },
-    {
-        title: 'Profile',
-        icon: UserCircle,
-        routeName: 'admin.profile',
-        href: '/admin/profile',
     },
 ];
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Election extends Model
 {
@@ -43,5 +44,15 @@ class Election extends Model
     public function candidates()
     {
         return $this->hasMany(Candidate::class);
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    public function eligibleVoters(): HasMany
+    {
+        return $this->hasMany(ElectionVoter::class);
     }
 }

@@ -70,6 +70,12 @@ class HandleInertiaRequests extends Middleware
 
             'flash' => [
 
+                'adminAlert' => fn () => $request->session()->get('adminAlert'),
+
+                // Generic admin form feedback used by candidate and partylist pages.
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+
                 // Voter Management
 
                 'voterCreated' => fn () => $request->session()->get('voterCreated'),

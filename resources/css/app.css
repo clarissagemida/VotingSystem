@@ -1,5 +1,116 @@
 @import 'tailwindcss';
 
+@keyframes live-result-enter {
+    from { transform: scaleX(0.15); opacity: 0.45; }
+    to { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes live-status-pulse {
+    50% { opacity: 0.45; }
+}
+
+main article span span[class*='h-1.5'] {
+    animation: live-status-pulse 1.8s ease-in-out infinite;
+}
+
+main article div[style*='width:'] {
+    transform-origin: left;
+    animation: live-result-enter 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transition: width 700ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main article div[style*='width:'] {
+        animation: none;
+        transition: none;
+    }
+
+    main article span span[class*='h-1.5'] {
+        animation: none;
+    }
+}
+
+@media (min-width: 1024px) {
+    main .mx-auto.max-w-7xl > section:has(> .divide-y) {
+        display: inline-block;
+        width: calc(50% - 0.5rem);
+        margin-right: 0.75rem;
+        vertical-align: top;
+    }
+}
+
+#elections > .grid > article {
+    animation: landing-card-loop 4s ease-in-out infinite alternate;
+}
+#elections > .grid > article:nth-child(even) {
+    animation-delay: 500ms;
+}
+
+#elections > div:nth-child(2),
+.election-showcase-grid article > div.border-t.bg-gradient-to-br {
+    display: none !important;
+}
+
+#elections > .grid > article:hover {
+    animation-play-state: paused;
+}
+
+@keyframes landing-card-loop {
+    from { transform: translateY(0); }
+    to { transform: translateY(-5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #elections > .grid > article {
+        animation: none;
+    }
+}
+
+@media print {
+    body.print-report-mode > #app > .h-screen > aside,
+    body.print-report-mode > #app > .h-screen > div > header,
+    body.print-report-mode .mx-auto > :not(.report-content) {
+        display: none !important;
+    }
+
+    body.print-report-mode > #app > .h-screen,
+    body.print-report-mode > #app > .h-screen > div,
+    body.print-report-mode main,
+    body.print-report-mode .mx-auto,
+    body.print-report-mode .report-content {
+        display: block !important;
+        position: static !important;
+        width: 100%;
+        height: auto !important;
+        overflow: visible !important;
+        border: 0;
+        padding: 0;
+        box-shadow: none;
+    }
+
+    body.print-report-mode .report-content {
+        break-inside: avoid;
+        color: #111827;
+        font-size: 11pt;
+    }
+
+    body.print-report-mode .report-heading {
+        border-bottom: 3px solid #1b4332;
+        padding-bottom: 16px;
+        margin-bottom: 18px;
+    }
+
+    body.print-report-mode .report-content .bg-emerald-50 {
+        background: #e8f5ec !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    body.print-report-mode .report-content .text-emerald-800 {
+        color: #14532d !important;
+    }
+}
+
 @plugin 'tailwindcss-animate';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -73,6 +184,34 @@
     ::backdrop,
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+@keyframes live-position-border-float {
+    0%,
+    100% {
+        border-color: rgb(16 185 129 / 0.55);
+        box-shadow: 0 0 0 1px rgb(16 185 129 / 0.16), 0 6px 18px rgb(6 78 59 / 0.1);
+        transform: translateY(0);
+    }
+
+    50% {
+        border-color: rgb(5 150 105 / 0.95);
+        box-shadow: 0 0 0 3px rgb(16 185 129 / 0.18), 0 16px 30px rgb(6 78 59 / 0.2);
+        transform: translateY(-3px);
+    }
+}
+
+.live-position-card {
+    border-color: rgb(16 185 129 / 0.65);
+    box-shadow: 0 0 0 1px rgb(16 185 129 / 0.14), 0 6px 18px rgb(6 78 59 / 0.1);
+    animation: live-position-border-float 3.6s ease-in-out infinite;
+    will-change: transform, border-color, box-shadow;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-position-card {
+        animation: none;
     }
 }
 

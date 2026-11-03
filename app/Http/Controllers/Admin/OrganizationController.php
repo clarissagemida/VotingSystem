@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreOrganizationRequest;
 use App\Http\Requests\Admin\UpdateOrganizationRequest;
 use App\Models\Organization;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -108,7 +109,7 @@ class OrganizationController extends Controller
     /**
      * Persist a new organization and its positions.
      */
-    public function store(StoreOrganizationRequest $request): RedirectResponse
+    public function store(StoreOrganizationRequest $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validated();
 
@@ -131,9 +132,13 @@ class OrganizationController extends Controller
             }
         });
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
         return redirect()
             ->route('admin.organizations.index')
-            ->with('organizationCreated', 'Organization created successfully.');
+            ->with('organizationCreated', $validated['name'].' created successfully.');
     }
 
     /**
@@ -151,9 +156,18 @@ class OrganizationController extends Controller
     /**
      * Show the form for editing an organization.
      */
-    public function edit(Organization $organization): Response
+    public function edit(Organization $organization): Response|JsonResponse
     {
         $organization->load('positions');
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'id' => $organization->id,
+                'name' => $organization->name,
+                'type' => $organization->type,
+                'positions' => $organization->positions,
+            ]);
+        }
 
         return Inertia::render('AdminSide/Organizations/Edit', [
             'organization' => $organization,
@@ -166,7 +180,7 @@ class OrganizationController extends Controller
     public function update(
         UpdateOrganizationRequest $request,
         Organization $organization
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $validated = $request->validated();
 
         $validated['name'] = $this->resolveName(
@@ -190,9 +204,13 @@ class OrganizationController extends Controller
             }
         });
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
         return redirect()
             ->route('admin.organizations.index')
-            ->with('organizationUpdated', 'Organization updated successfully.');
+            ->with('organizationUpdated', $validated['name'].' updated successfully.');
     }
 
     /**
@@ -200,12 +218,17 @@ class OrganizationController extends Controller
      *
      * Positions are removed automatically through cascadeOnDelete().
      */
-    public function destroy(Organization $organization): RedirectResponse
+    public function destroy(Organization $organization): RedirectResponse|JsonResponse
     {
+        $orgName = $organization->name;
         $organization->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()
             ->route('admin.organizations.index')
-            ->with('organizationDeleted', 'Organization deleted successfully.');
+            ->with('organizationDeleted', $orgName.' deleted successfully.');
     }
 }

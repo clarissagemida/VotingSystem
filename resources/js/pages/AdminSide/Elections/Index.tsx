@@ -1,10 +1,13 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CalendarDays, CheckCircle2, Clock, Edit3, Eye, FileText, Plus, Search, Trash2, Vote } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 
 import AdminLayout from '@/layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirm';
+
+import CreateElectionModal from './CreateModal';
+import DeleteElectionModal from './DeleteModal';
+import EditElectionModal from './EditModal';
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +75,34 @@ function statusClass(status: Election['status']): string {
 
 export default function Index({ elections }: Props) {
     const [search, setSearch] = useState('');
+    const [createOpen, setCreateOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedElection, setSelectedElection] = useState<Election | null>(null);
+
+    const { props } = usePage();
+    const flash = (props as { flash?: { success?: string; error?: string } }).flash;
+
+    useEffect(() => {
+        if (flash?.success) {
+            Swal.fire({
+                title: 'Success',
+                text: flash.success,
+                icon: 'success',
+                timer: 1600,
+                showConfirmButton: false,
+                confirmButtonColor: '#2D6A4F',
+            });
+        }
+        if (flash?.error) {
+            Swal.fire({
+                title: 'Error',
+                text: flash.error,
+                icon: 'error',
+                confirmButtonColor: '#2D6A4F',
+            });
+        }
+    }, [flash]);
 
     const filteredElections = useMemo(() => {
         const keyword = search.toLowerCase().trim();
@@ -93,37 +124,22 @@ export default function Index({ elections }: Props) {
     const upcomingCount = elections.filter((e) => e.status === 'Upcoming').length;
     const completedCount = elections.filter((e) => e.status === 'Completed').length;
 
-    const handleDelete = async (election: Election) => {
-        const confirmed = await confirmDelete({
-            title: 'Delete Election?',
-            itemName: election.title,
-        });
+    const openEdit = (election: Election) => {
+        setSelectedElection(election);
+        setEditOpen(true);
+    };
+    const closeEdit = () => {
+        setEditOpen(false);
+        setSelectedElection(null);
+    };
 
-        if (!confirmed) {
-            return;
-        }
-
-        router.delete(`/admin/elections/${election.id}`, {
-            preserveScroll: true,
-
-            onSuccess: () => {
-                Swal.fire({
-                    title: 'Deleted!',
-                    text: 'Election has been deleted successfully.',
-                    icon: 'success',
-                    confirmButtonColor: '#2D6A4F',
-                });
-            },
-
-            onError: () => {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Unable to delete the election.',
-                    icon: 'error',
-                    confirmButtonColor: '#2D6A4F',
-                });
-            },
-        });
+    const openDelete = (election: Election) => {
+        setSelectedElection(election);
+        setDeleteOpen(true);
+    };
+    const closeDelete = () => {
+        setDeleteOpen(false);
+        setSelectedElection(null);
     };
 
     return (
@@ -142,13 +158,14 @@ export default function Index({ elections }: Props) {
                         <p className="mt-1 text-sm text-gray-500">Create and manage voting elections and their schedules.</p>
                     </div>
 
-                    <Link
-                        href="/admin/elections/create"
+                    <button
+                        type="button"
+                        onClick={() => setCreateOpen(true)}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D6A4F] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1B4332] focus:ring-4 focus:ring-[#2D6A4F]/20 focus:outline-none"
                     >
                         <Plus className="h-5 w-5" />
                         Add Election
-                    </Link>
+                    </button>
                 </div>
 
                 {/* SUMMARY CARDS */}
@@ -299,17 +316,18 @@ export default function Index({ elections }: Props) {
                                                         <Eye size={17} />
                                                     </Link>
 
-                                                    <Link
-                                                        href={`/admin/elections/${election.id}/edit`}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEdit(election)}
                                                         title="Edit election"
                                                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
                                                     >
                                                         <Edit3 size={17} />
-                                                    </Link>
+                                                    </button>
 
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleDelete(election)}
+                                                        onClick={() => openDelete(election)}
                                                         title="Delete election"
                                                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600"
                                                     >
@@ -325,6 +343,10 @@ export default function Index({ elections }: Props) {
                     </div>
                 </div>
             </div>
+
+            <CreateElectionModal open={createOpen} onClose={() => setCreateOpen(false)} />
+            <EditElectionModal open={editOpen} election={selectedElection} onClose={closeEdit} />
+            <DeleteElectionModal open={deleteOpen} election={selectedElection} onClose={closeDelete} />
         </AdminLayout>
     );
 }

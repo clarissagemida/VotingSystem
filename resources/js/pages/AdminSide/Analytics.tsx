@@ -9,6 +9,8 @@ import {
     CheckCircle2,
     ChevronDown,
     Crown,
+    Download,
+    Printer,
     RefreshCw,
     ShieldCheck,
     UserCheck,
@@ -17,7 +19,7 @@ import {
     Vote,
 } from 'lucide-react';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import AdminLayout from '@/layouts/AdminLayout';
 
@@ -87,6 +89,8 @@ interface PartylistInfo {
 interface PositionVoteEntry {
     id: number;
     name: string;
+    organization_id: number | null;
+    organization_name: string | null;
     type: 'independent' | 'partylist';
     partylist: PartylistInfo | null;
     election: string | null;
@@ -189,6 +193,13 @@ export default function Analytics({
     dataIntegrity,
     lastUpdated,
 }: AnalyticsProps) {
+    const [activeView, setActiveView] = useState<'analytics' | 'reports'>('analytics');
+    const [reportOrganizationId, setReportOrganizationId] = useState<number | null>(null);
+    const reportCandidates = votesByPosition.flatMap((group) => group.candidates.map((candidate) => ({ ...candidate, position: group.position }))).filter((candidate) => reportOrganizationId === null || candidate.organization_id === reportOrganizationId);
+
+    useEffect(() => {
+        setReportOrganizationId(null);
+    }, [selectedElectionId]);
     /*
     |--------------------------------------------------------------------------
     | ELECTION FILTER
@@ -241,6 +252,61 @@ export default function Analytics({
                 setRefreshing(false);
             },
         });
+    };
+
+    const exportReport = () => {
+        const canShowCandidateResults = selectedElection?.status === 'Completed';
+        if (!selectedElection || reportOrganizationId === null) return;
+        const rows: string[][] = [
+            ['Organization Election Report', candidatesByOrganization.find((organization) => organization.id === reportOrganizationId)?.name ?? 'Select an organization'],
+            ['Election', selectedElection?.title ?? 'All Elections'],
+            ['Generated', lastUpdated],
+            [],
+            ['Summary', 'Value'],
+            ['Election eligible voters', String(overview.eligible_voters)],
+            ['Election participated', String(safeVotersWhoVoted)],
+            ['Election not participated', String(safeDidNotVote)],
+            ['Election turnout (%)', String(safeTurnout)],
+            [],
+            ['Position', 'Candidate', 'Type', 'Partylist', 'Votes', 'Share (%)', 'Standing'],
+            ...(reportOrganizationId !== null ? votesByPosition.flatMap((group) => {
+                const organizationCandidates = group.candidates.filter((candidate) => candidate.organization_id === reportOrganizationId);
+                const top = Math.max(0, ...organizationCandidates.map((candidate) => candidate.votes));
+                const leaderCount = organizationCandidates.filter((candidate) => candidate.votes === top).length;
+                return organizationCandidates.map((candidate) => [
+                group.position,
+                candidate.name,
+                candidate.type,
+                candidate.partylist?.acronym ?? candidate.partylist?.name ?? (candidate.type === 'independent' ? 'Independent' : ''),
+                canShowCandidateResults ? String(candidate.votes) : 'Hidden until election completion',
+                canShowCandidateResults ? String(candidate.share) : 'Hidden until election completion',
+                canShowCandidateResults && top > 0 && candidate.votes === top ? leaderCount > 1 ? 'Tied lead' : 'Leading' : '',
+            ]);
+            }) : []),
+            [],
+            ['Election', 'Status', 'Eligible', 'Participated', 'Not participated', 'Turnout (%)'],
+            ...electionTurnout.filter((election) => election.id === selectedElection.id).map((election) => [election.title, election.status, String(election.eligible_voters), String(election.voted), String(election.not_voted), String(election.percent)]),
+        ];
+        const csv = rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+        const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `election-report-${selectedElection.id}-${reportOrganizationId}-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    const printReport = () => {
+        if (activeView !== 'reports' || reportOrganizationId === null || selectedElection === null) {
+            return;
+        }
+
+        document.body.classList.add('print-report-mode');
+        window.print();
+        window.setTimeout(() => document.body.classList.remove('print-report-mode'), 500);
     };
 
     /*
@@ -340,6 +406,38 @@ export default function Analytics({
                         </div>
                     </div>
                 </section>
+
+                <div className="flex w-fit rounded-xl border border-gray-200 bg-white p-1 shadow-sm print:hidden" role="tablist" aria-label="Analytics and reports">
+                    {(['analytics', 'reports'] as const).map((view) => <button key={view} type="button" role="tab" aria-selected={activeView === view} onClick={() => setActiveView(view)} className={`rounded-lg px-5 py-2.5 text-sm font-semibold capitalize transition ${activeView === view ? 'bg-[#1B4332] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}>{view}</button>)}
+                </div>
+
+                <section className={`${activeView === 'reports' ? '' : 'hidden'} report-content rounded-2xl border border-gray-200 bg-white p-5 shadow-sm print:border-0 print:shadow-none`}>
+                    <div className="report-heading flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4">
+                        <div>
+                            <p className="text-xs font-bold tracking-[0.2em] text-[#40916C] uppercase">Official election report</p>
+                            <h2 className="mt-2 text-2xl font-bold text-[#143728]">{candidatesByOrganization.find((organization) => organization.id === reportOrganizationId)?.name ?? 'Organization'} </h2>
+                            <p className="mt-1 text-sm text-gray-600">{selectedElection?.title ?? 'Select an election'} · Generated {lastUpdated}</p>
+                        </div>
+                        <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-800 print:hidden">Database report</span>
+                    </div>
+                    <label className="mt-4 block text-sm font-medium text-gray-700 print:hidden">Organization
+                        <select value={reportOrganizationId ?? ''} onChange={(event) => setReportOrganizationId(event.target.value ? Number(event.target.value) : null)} className="mt-2 block w-full max-w-sm rounded-lg border border-gray-300 bg-white px-3 py-2">
+                            <option value="">Select organization</option>
+                            {candidatesByOrganization.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
+                        </select>
+                    </label>
+                    <div className="mt-4 flex flex-wrap gap-2 print:hidden">
+                        <button type="button" onClick={printReport} disabled={reportOrganizationId === null || selectedElection === null} className="inline-flex items-center gap-2 rounded-lg bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D6A4F] disabled:cursor-not-allowed disabled:opacity-50"><Printer size={16} /> Print / Save as PDF</button>
+                        <button type="button" onClick={exportReport} disabled={reportOrganizationId === null || selectedElection === null} className="inline-flex items-center gap-2 rounded-lg border border-[#2D6A4F] px-4 py-2.5 text-sm font-semibold text-[#1B4332] hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"><Download size={16} /> Export CSV</button>
+                        {(!selectedElection || reportOrganizationId === null) && <span className="self-center text-xs text-gray-500">Choose an election and organization to print or export.</span>}
+                    </div>
+                    {selectedElection && <div className="grid grid-cols-2 gap-3 py-4 sm:grid-cols-4">
+                        {[['Election eligible', safeEligibleVoters], ['Participated', safeVotersWhoVoted], ['Did not participate', safeDidNotVote], ['Turnout', `${safeTurnout}%`]].map(([label, value]) => <div key={label} className="rounded-xl bg-gray-50 p-3"><p className="text-xs text-gray-500">{label}</p><p className="mt-1 text-xl font-bold text-[#1B4332]">{value}</p></div>)}
+                    </div>}
+                    {reportOrganizationId === null ? <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-800 print:hidden">Select an organization to view its report.</p> : !selectedElection ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Choose one election from the filter above to prepare an organization report.</p> : selectedElection.status === 'Completed' ? <div className="mt-5 space-y-4">{votesByPosition.map((group) => { const candidates = reportCandidates.filter((candidate) => candidate.position === group.position); const maxVotes = Math.max(0, ...candidates.map((candidate) => candidate.votes)); const leaders = candidates.filter((candidate) => candidate.votes === maxVotes); const tied = leaders.length > 1; return candidates.length ? <div key={group.position} className="overflow-hidden rounded-xl border border-gray-200"><div className="flex items-center justify-between bg-[#F2F7F3] px-4 py-3"><h4 className="font-bold text-[#1B4332]">{group.position}</h4><span className="text-xs text-gray-500">{group.total_votes} valid votes</span></div><div className="divide-y divide-gray-100">{candidates.map((candidate) => { const leading = maxVotes > 0 && candidate.votes === maxVotes; return <div key={candidate.id} className={`flex items-center justify-between gap-3 px-4 py-3 text-sm ${leading ? 'bg-emerald-50' : 'bg-white'}`}><div><p className="font-semibold text-gray-900">{candidate.name}</p><p className="text-xs text-gray-500">{candidate.type === 'independent' ? 'Independent' : candidate.partylist?.name ?? 'Partylist'}</p></div><div className="flex items-center gap-3 text-right">{leading && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800"><Crown size={13} />{tied ? 'Tied lead' : 'Leading'}</span>}<span className="font-bold text-gray-900">{candidate.votes} <span className="font-normal text-gray-500">({candidate.share}%)</span></span></div></div>; })}</div></div> : null; })}</div> : <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">Candidate totals appear only after the selected election is completed.</p>}
+                </section>
+
+                <div className={`${activeView === 'analytics' ? '' : 'hidden'} space-y-6`}>
 
                 {/* ==========================================================
                     SELECTED ELECTION
@@ -647,6 +745,7 @@ export default function Analytics({
                             )}
                         </div>
                     </section>
+                </div>
                 </div>
             </div>
         </AdminLayout>

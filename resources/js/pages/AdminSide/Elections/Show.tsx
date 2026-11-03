@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
-import { CalendarDays, Clock, FileText, Vote, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CalendarDays, Clock, FileText, RefreshCw, Vote, X } from 'lucide-react';
 
 import AdminLayout from '@/layouts/AdminLayout';
 
@@ -18,9 +19,28 @@ interface Election {
 
 interface Props {
     election: Election;
+    eligibleVoterCount: number;
+    votersWhoVoted: number;
+    notYetParticipated: number;
+    turnout: number;
+    positions: Array<{ name: string; participating: number; eligible: number; progress: number; candidates: Array<{ name: string; designation: string | null; votes: number }> }>;
+    resultsVisible: boolean;
+    lastRefreshedAt: string;
 }
 
-export default function Show({ election }: Props) {
+export default function Show({ election, eligibleVoterCount, votersWhoVoted, notYetParticipated, turnout, positions, resultsVisible, lastRefreshedAt }: Props) {
+    const [refreshedAt, setRefreshedAt] = useState(lastRefreshedAt);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const refresh = () => {
+        setRefreshing(true);
+        router.reload({ only: ['election', 'eligibleVoterCount', 'votersWhoVoted', 'notYetParticipated', 'turnout', 'positions', 'resultsVisible', 'lastRefreshedAt'], onFinish: () => { setRefreshedAt(new Date().toISOString()); setRefreshing(false); } });
+    };
+
+    useEffect(() => {
+        const timer = window.setInterval(refresh, 30000);
+        return () => window.clearInterval(timer);
+    }, []);
     /*
     |--------------------------------------------------------------------------
     | Close Modal
@@ -96,7 +116,7 @@ export default function Show({ election }: Props) {
                     }
                 }}
             >
-                <DialogContent className="max-h-[90vh] w-[95vw] max-w-3xl overflow-y-auto border-0 bg-white p-0 shadow-2xl sm:rounded-2xl">
+                <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto border-0 bg-white p-0 shadow-2xl sm:rounded-2xl">
                     {/* =====================================================
                         MODAL HEADER
                     ===================================================== */}
@@ -139,6 +159,24 @@ export default function Show({ election }: Props) {
                     ===================================================== */}
 
                     <div className="space-y-6 px-6 py-6 sm:px-7">
+                        <section className="rounded-2xl border border-green-100 bg-gradient-to-br from-white to-green-50 p-5">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div><h3 className="font-bold text-gray-900">Live voting monitor</h3><p className="mt-1 text-xs text-gray-500">Database-backed figures · refreshed {formatDateTime(refreshedAt)}</p></div>
+                                <button type="button" onClick={refresh} disabled={refreshing} className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-white px-3 py-2 text-sm font-semibold text-[#1B4332] hover:bg-green-50 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh</button>
+                            </div>
+                            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                {[['Eligible', eligibleVoterCount], ['Participated', votersWhoVoted], ['Not yet voted', notYetParticipated], ['Turnout', `${turnout}%`]].map(([label, value]) => <div key={label} className="rounded-xl border border-gray-100 bg-white p-3"><p className="text-xs font-medium text-gray-500">{label}</p><p className="mt-1 text-xl font-bold text-[#1B4332]">{value}</p></div>)}
+                            </div>
+                            <div className="mt-5 space-y-4">
+                                {positions.length === 0 ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">No candidates or positions are configured for this election.</p> : positions.map(position => <div key={position.name} className="rounded-xl border border-gray-100 bg-white p-4">
+                                    <div className="flex items-center justify-between gap-2"><h4 className="font-semibold text-gray-800">{position.name}</h4><span className="text-xs text-gray-500">{position.participating} / {position.eligible} selections</span></div>
+                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-[#40916C] transition-all" style={{ width: `${Math.min(position.progress, 100)}%` }} /></div>
+                                    <p className="mt-1 text-right text-xs text-gray-500">{position.progress}% of eligible voters</p>
+                                    {resultsVisible && <div className="mt-3 divide-y divide-gray-100">{position.candidates.map(candidate => <div key={candidate.name} className="flex justify-between gap-3 py-2 text-sm"><span className="text-gray-700">{candidate.name}<span className="ml-2 text-xs text-gray-400">{candidate.designation || 'Independent'}</span></span><span className="font-semibold text-gray-900">{candidate.votes} votes</span></div>)}</div>}
+                                </div>)}
+                            </div>
+                            {!resultsVisible && <p className="mt-4 rounded-lg bg-blue-50 p-3 text-xs text-blue-800">Candidate totals are hidden until the scheduled election end time.</p>}
+                        </section>
                         {/* =================================================
                             ELECTION INFORMATION
                         ================================================= */}

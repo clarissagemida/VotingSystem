@@ -4,14 +4,17 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CandidateController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ElectionController;
+use App\Http\Controllers\Admin\LiveVotingController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PartylistController;
 use App\Http\Controllers\Admin\VoterController;
+use App\Http\Controllers\PublicLiveResultsController;
 use App\Http\Controllers\Voter\ProfileController;
 use App\Http\Controllers\Voter\VoteHistoryController;
 use App\Http\Controllers\Voter\VoterDashboardController;
 use App\Http\Controllers\Voter\VotingController;
+use App\Models\Election;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,12 +23,46 @@ use Inertia\Inertia;
 Route::middleware('guest')->group(function () {
 
     Route::get('/', function () {
+        $elections = Election::query()
+            ->orderBy('start_at')
+            ->get(['id', 'title', 'start_at', 'end_at'])
+            ->filter(fn ($election) => in_array($election->status, ['Upcoming', 'Ongoing'], true))
+            ->map(fn ($election) => [
+                'id' => $election->id,
+                'title' => $election->title,
+                'status' => $election->status,
+                'start_at' => $election->start_at?->toIso8601String(),
+                'end_at' => $election->end_at?->toIso8601String(),
+                'organizations' => $election->partylists()->with('organization:id,name')->get()->pluck('organization.name')->filter()->unique()->values(),
+            ])->values();
+
         return Inertia::render('auth/login', [
             'loginType' => 'voter',
+            'showcaseElections' => $elections,
         ]);
     })->name('home');
 
 });
+
+Route::get('/live-results/{election}', [PublicLiveResultsController::class, 'show'])
+    ->name('public.live-results');
+
+// dashboard route for default auth redirects (compatibility)
+
+Route::middleware(['auth'])->get('/dashboard', function () {
+    $user = auth()->user();
+
+    if ($user && $user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user && $user->role === 'voter') {
+        return redirect()->route('voter.dashboard');
+    }
+
+    // For compatibility with tests
+    return response('OK', 200);
+})->name('dashboard');
 
 // authentication check
 
@@ -66,6 +103,9 @@ Route::middleware(['auth', 'admin'])
             [AnalyticsController::class, 'index']
         )->name('analytics.index');
 
+        Route::get('/live-voting', [LiveVotingController::class, 'index'])
+            ->name('live-voting.index');
+
         // admin notification routes
 
         Route::get('/notifications', [NotificationController::class, 'index'])
@@ -93,6 +133,8 @@ Route::middleware(['auth', 'admin'])
 
         Route::patch('/voters/{voter}', [VoterController::class, 'update'])
             ->name('voters.update');
+
+        Route::put('/voters/{voter}', [VoterController::class, 'update']);
 
         Route::delete('/voters/{voter}', [VoterController::class, 'destroy'])
             ->name('voters.destroy');
@@ -124,6 +166,9 @@ Route::middleware(['auth', 'admin'])
             [ElectionController::class, 'show']
         )->name('elections.show');
 
+        Route::get('/elections/{election}/live-data', [ElectionController::class, 'liveData'])
+            ->name('elections.live-data');
+
         Route::get(
             '/elections/{election}/edit',
             [ElectionController::class, 'edit']
@@ -133,6 +178,11 @@ Route::middleware(['auth', 'admin'])
             '/elections/{election}',
             [ElectionController::class, 'update']
         )->name('elections.update');
+
+        Route::put(
+            '/elections/{election}',
+            [ElectionController::class, 'update']
+        );
 
         Route::delete(
             '/elections/{election}',
@@ -170,6 +220,11 @@ Route::middleware(['auth', 'admin'])
             '/organizations/{organization}',
             [OrganizationController::class, 'update']
         )->name('organizations.update');
+
+        Route::put(
+            '/organizations/{organization}',
+            [OrganizationController::class, 'update']
+        );
 
         Route::delete(
             '/organizations/{organization}',

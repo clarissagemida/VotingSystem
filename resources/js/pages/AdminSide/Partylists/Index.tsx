@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 
 import AdminLayout from '@/layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirm';
+
+import CreatePartylistModal from './CreateModal';
+import DeletePartylistModal from './DeleteModal';
+import EditPartylistModal from './EditModal';
 
 /*
 |--------------------------------------------------------------------------
@@ -113,7 +116,7 @@ const getPartylistLogoUrl = (logo: string | null | undefined): string | null => 
 |--------------------------------------------------------------------------
 */
 
-export default function Index({ partylists, independentCandidatesCount, flash }: Props) {
+export default function Index({ partylists, independentCandidatesCount, elections, organizations, flash }: Props) {
     /*
     |--------------------------------------------------------------------------
     | STATE
@@ -121,6 +124,10 @@ export default function Index({ partylists, independentCandidatesCount, flash }:
     */
 
     const [search, setSearch] = useState('');
+    const [createOpen, setCreateOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedPartylist, setSelectedPartylist] = useState<Partylist | null>(null);
 
     /*
     |--------------------------------------------------------------------------
@@ -184,20 +191,22 @@ export default function Index({ partylists, independentCandidatesCount, flash }:
     |--------------------------------------------------------------------------
     */
 
-    const deletePartylist = async (party: Partylist) => {
-        const confirmed = await confirmDelete({
-            title: 'Delete Partylist?',
-            itemName: party.partylist_name,
-            subtitle: 'Related candidate records may also be affected. This action cannot be undone.',
-        });
+    const openEdit = (party: Partylist) => {
+        setSelectedPartylist(party);
+        setEditOpen(true);
+    };
+    const closeEdit = () => {
+        setEditOpen(false);
+        setSelectedPartylist(null);
+    };
 
-        if (!confirmed) {
-            return;
-        }
-
-        router.delete(`/admin/partylists/${party.id}`, {
-            preserveScroll: true,
-        });
+    const openDelete = (party: Partylist) => {
+        setSelectedPartylist(party);
+        setDeleteOpen(true);
+    };
+    const closeDelete = () => {
+        setDeleteOpen(false);
+        setSelectedPartylist(null);
     };
 
     /*
@@ -358,13 +367,14 @@ export default function Index({ partylists, independentCandidatesCount, flash }:
 
                                 {/* ADD PARTYLIST */}
 
-                                <Link
-                                    href="/admin/partylists/create"
+                                <button
+                                    type="button"
+                                    onClick={() => setCreateOpen(true)}
                                     className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#143728] shadow-sm transition hover:bg-gray-100 active:scale-[0.98]"
                                 >
                                     <Plus size={18} strokeWidth={2.5} />
                                     Add Partylist
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -666,19 +676,20 @@ export default function Index({ partylists, independentCandidatesCount, flash }:
 
                                                         {/* EDIT */}
 
-                                                        <Link
-                                                            href={`/admin/partylists/${party.id}/edit`}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEdit(party)}
                                                             className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100 active:scale-95"
                                                             title="Edit Partylist"
                                                         >
                                                             <Edit3 size={15} />
-                                                        </Link>
+                                                        </button>
 
                                                         {/* DELETE */}
 
                                                         <button
                                                             type="button"
-                                                            onClick={() => deletePartylist(party)}
+                                                            onClick={() => openDelete(party)}
                                                             className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 active:scale-95"
                                                             title="Delete Partylist"
                                                         >
@@ -706,13 +717,14 @@ export default function Index({ partylists, independentCandidatesCount, flash }:
                                                 </p>
 
                                                 {!search && (
-                                                    <Link
-                                                        href="/admin/partylists/create"
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCreateOpen(true)}
                                                         className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#1B4332] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#143728] active:scale-95"
                                                     >
                                                         <Plus size={15} />
                                                         Add First Partylist
-                                                    </Link>
+                                                    </button>
                                                 )}
                                             </div>
                                         </td>
@@ -723,6 +735,10 @@ export default function Index({ partylists, independentCandidatesCount, flash }:
                     </div>
                 </section>
             </div>
+
+            <CreatePartylistModal open={createOpen} onClose={() => setCreateOpen(false)} elections={elections} organizations={organizations} />
+            <EditPartylistModal open={editOpen} onClose={closeEdit} partylist={selectedPartylist} elections={elections} organizations={organizations} />
+            <DeletePartylistModal open={deleteOpen} onClose={closeDelete} partylist={selectedPartylist} />
         </AdminLayout>
     );
 }

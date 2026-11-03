@@ -1,10 +1,13 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Building2, CheckCircle2, Edit3, Eye, Layers3, Plus, Search, Trash2, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 
 import AdminLayout from '@/layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirm';
+
+import CreateOrganizationModal from './CreateModal';
+import DeleteOrganizationModal from './DeleteModal';
+import EditOrganizationModal from './EditModal';
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +64,11 @@ export default function OrganizationIndex({ organizations }: Props) {
     const [search, setSearch] = useState('');
 
     const [filterType, setFilterType] = useState<'ALL' | OrganizationType>('ALL');
+
+    const [createOpen, setCreateOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
 
     /*
     |--------------------------------------------------------------------------
@@ -155,24 +163,29 @@ export default function OrganizationIndex({ organizations }: Props) {
 
     /*
     |--------------------------------------------------------------------------
-    | DELETE ORGANIZATION
+    | MODALS
     |--------------------------------------------------------------------------
     */
 
-    const deleteOrganization = async (organization: Organization) => {
-        const confirmed = await confirmDelete({
-            title: 'Delete Organization?',
-            itemName: organization.name,
-            subtitle: `${organization.positions.length} position(s) will also be removed.`,
-        });
+    const openCreate = () => setCreateOpen(true);
+    const closeCreate = () => setCreateOpen(false);
 
-        if (!confirmed) {
-            return;
-        }
+    const openEdit = (organization: Organization) => {
+        setSelectedOrganization(organization);
+        setEditOpen(true);
+    };
+    const closeEdit = () => {
+        setEditOpen(false);
+        setSelectedOrganization(null);
+    };
 
-        router.delete(`/admin/organizations/${organization.id}`, {
-            preserveScroll: true,
-        });
+    const openDelete = (organization: Organization) => {
+        setSelectedOrganization(organization);
+        setDeleteOpen(true);
+    };
+    const closeDelete = () => {
+        setDeleteOpen(false);
+        setSelectedOrganization(null);
     };
 
     /*
@@ -241,13 +254,14 @@ export default function OrganizationIndex({ organizations }: Props) {
                         </div>
                     </div>
 
-                    <Link
-                        href="/admin/organizations/create"
+                    <button
+                        type="button"
+                        onClick={openCreate}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B4332] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#143728] focus:ring-4 focus:ring-[#1B4332]/20 focus:outline-none"
                     >
                         <Plus className="h-5 w-5" />
                         Add Organization
-                    </Link>
+                    </button>
                 </div>
 
                 {/* ==========================================================
@@ -440,13 +454,14 @@ export default function OrganizationIndex({ organizations }: Props) {
                                                         Clear Filters
                                                     </button>
                                                 ) : (
-                                                    <Link
-                                                        href="/admin/organizations/create"
+                                                    <button
+                                                        type="button"
+                                                        onClick={openCreate}
                                                         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#1B4332] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#143728]"
                                                     >
                                                         <Plus size={17} />
                                                         Add Organization
-                                                    </Link>
+                                                    </button>
                                                 )}
                                             </div>
                                         </td>
@@ -513,17 +528,18 @@ export default function OrganizationIndex({ organizations }: Props) {
 
                                             <td className="px-5 py-5">
                                                 <div className="flex justify-end gap-1">
-                                                    <Link
-                                                        href={`/admin/organizations/${organization.id}/edit`}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEdit(organization)}
                                                         title="Edit organization"
                                                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-blue-50 hover:text-blue-600"
                                                     >
                                                         <Edit3 size={17} />
-                                                    </Link>
+                                                    </button>
 
                                                     <button
                                                         type="button"
-                                                        onClick={() => deleteOrganization(organization)}
+                                                        onClick={() => openDelete(organization)}
                                                         title="Delete organization"
                                                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600"
                                                     >
@@ -539,6 +555,10 @@ export default function OrganizationIndex({ organizations }: Props) {
                     </div>
                 </div>
             </div>
+
+            <CreateOrganizationModal open={createOpen} onClose={closeCreate} />
+            <EditOrganizationModal open={editOpen} organization={selectedOrganization} onClose={closeEdit} />
+            <DeleteOrganizationModal open={deleteOpen} organization={selectedOrganization} onClose={closeDelete} />
         </AdminLayout>
     );
 }

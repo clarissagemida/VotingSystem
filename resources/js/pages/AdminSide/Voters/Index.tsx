@@ -1,12 +1,14 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Edit3, KeyRound, Plus, Search, ShieldCheck, Trash2, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 
 import AdminLayout from '@/layouts/AdminLayout';
 
+import CreateVoterModal from './CreateModal';
 import CredentialDialog from './CredentialDialog';
-import DeleteVoter from './Delete';
+import DeleteVoterModal from './DeleteModal';
+import EditVoterModal from './EditModal';
 
 interface Voter {
     id: number;
@@ -59,6 +61,10 @@ export default function Index() {
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const [credentialOpen, setCredentialOpen] = useState(false);
+
+    const [createOpen, setCreateOpen] = useState(false);
+
+    const [editOpen, setEditOpen] = useState(false);
 
     const [selectedVoter, setSelectedVoter] = useState<Voter | null>(null);
 
@@ -181,7 +187,7 @@ export default function Index() {
 
     /*
     |--------------------------------------------------------------------------
-    | DELETE
+    | MODALS
     |--------------------------------------------------------------------------
     */
 
@@ -193,6 +199,24 @@ export default function Index() {
     const closeDelete = () => {
         setDeleteOpen(false);
         setSelectedVoter(null);
+    };
+
+    const openEdit = (voter: Voter) => {
+        setSelectedVoter(voter);
+        setEditOpen(true);
+    };
+
+    const closeEdit = () => {
+        setEditOpen(false);
+        setSelectedVoter(null);
+    };
+
+    const openCreate = () => {
+        setCreateOpen(true);
+    };
+
+    const closeCreate = () => {
+        setCreateOpen(false);
     };
 
     /*
@@ -293,13 +317,14 @@ export default function Index() {
                         <p className="mt-1 text-sm text-gray-500">Create and manage voter accounts and securely manage voter credentials.</p>
                     </div>
 
-                    <Link
-                        href="/admin/voters/create"
+                    <button
+                        type="button"
+                        onClick={openCreate}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2D6A4F] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1B4332] focus:ring-4 focus:ring-[#2D6A4F]/20 focus:outline-none"
                     >
                         <Plus className="h-5 w-5" />
                         Add Voter
-                    </Link>
+                    </button>
                 </div>
 
                 {/* ==========================================================
@@ -503,13 +528,14 @@ export default function Index() {
 
                                                     {/* EDIT */}
 
-                                                    <Link
-                                                        href={`/admin/voters/${voter.id}/edit`}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEdit(voter)}
                                                         title="Edit voter"
                                                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
                                                     >
                                                         <Edit3 size={17} />
-                                                    </Link>
+                                                    </button>
 
                                                     {/* DELETE */}
 
@@ -533,14 +559,14 @@ export default function Index() {
             </div>
 
             {/* ==========================================================
-                DELETE
+                MODALS
             ========================================================== */}
 
-            <DeleteVoter open={deleteOpen} voter={selectedVoter} onClose={closeDelete} />
+            <CreateVoterModal open={createOpen} onClose={closeCreate} />
 
-            {/* ==========================================================
-                CREDENTIALS
-            ========================================================== */}
+            <EditVoterModal open={editOpen} voter={selectedVoter} onClose={closeEdit} />
+
+            <DeleteVoterModal open={deleteOpen} voter={selectedVoter} onClose={closeDelete} />
 
             <CredentialDialog
                 open={credentialOpen}
