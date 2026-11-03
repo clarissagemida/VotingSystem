@@ -195,7 +195,10 @@ class ElectionController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $eligibleVoterCount = $eligibleVoters->count();
+        // Every voter account can vote in an open election; eligibility is not limited to manual assignments.
+        $eligibleVoterCount = User::query()
+            ->where('role', 'voter')
+            ->count();
 
         /*
         |--------------------------------------------------------------------------

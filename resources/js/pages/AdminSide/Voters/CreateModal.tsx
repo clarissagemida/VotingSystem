@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { ArrowLeft, Eye, EyeOff, RefreshCcw, UserPlus, X } from 'lucide-react';
+import { Eye, EyeOff, RefreshCcw, UserPlus } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';

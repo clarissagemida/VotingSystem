@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from 'react';
 
 import AdminLayout from '@/layouts/AdminLayout';
+import { getCandidatePhotoUrl } from '@/lib/candidates';
 
 /*
 |--------------------------------------------------------------------------
@@ -89,6 +90,7 @@ interface PartylistInfo {
 interface PositionVoteEntry {
     id: number;
     name: string;
+    photo: string | null;
     organization_id: number | null;
     organization_name: string | null;
     type: 'independent' | 'partylist';
@@ -988,6 +990,32 @@ function CandidatePill({ type, partylist }: { type: 'independent' | 'partylist';
     );
 }
 
+function CandidateAvatar({ name, photo, className = 'h-9 w-9' }: { name: string; photo: string | null; className?: string }) {
+    const [imageFailed, setImageFailed] = useState(false);
+    const photoUrl = imageFailed ? null : getCandidatePhotoUrl(photo);
+    const initials = name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase() || '?';
+
+    if (photoUrl) {
+        return (
+            <img
+                src={photoUrl}
+                alt={`${name} photo`}
+                onError={() => setImageFailed(true)}
+                className={`${className} shrink-0 rounded-full border border-gray-200 bg-white object-cover`}
+            />
+        );
+    }
+
+    return (
+        <span
+            aria-label={`${name} initials`}
+            className={`${className} flex shrink-0 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-xs font-bold text-[#1B4332]`}
+        >
+            {initials}
+        </span>
+    );
+}
+
 /*
 |--------------------------------------------------------------------------
 | POSITION COMPARISON
@@ -1016,6 +1044,8 @@ function PositionComparison({ group, showElection }: { group: VotesByPositionEnt
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 ring-1 ring-amber-200">
                                     <Crown size={16} />
                                 </div>
+
+                                <CandidateAvatar name={leader.name} photo={leader.photo} className="h-9 w-9" />
 
                                 <div className="min-w-0">
                                     <p className="text-[9px] font-bold tracking-wide text-amber-500 uppercase">Currently leading</p>
@@ -1049,6 +1079,8 @@ function PositionComparison({ group, showElection }: { group: VotesByPositionEnt
                                         >
                                             {index + 1}
                                         </span>
+
+                                        <CandidateAvatar name={candidate.name} photo={candidate.photo} className="h-8 w-8" />
 
                                         <div className="min-w-0">
                                             <p className="truncate text-xs font-semibold text-gray-700">{candidate.name}</p>

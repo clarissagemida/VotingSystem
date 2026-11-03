@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { AtSign, UserCog, X } from 'lucide-react';
+import { AtSign, UserCog } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';

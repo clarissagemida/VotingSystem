@@ -17,19 +17,18 @@ class PublicLiveResultsController extends Controller
 
         return response()->json([
             'election' => $data['election'],
-            'eligible' => $data['eligible'],
-            'participated' => $data['participated'],
-            'turnout' => $data['turnout'],
             'visible' => $visible,
             'updated_at' => $data['updated_at'],
             'positions' => $data['positions']->map(fn ($position) => [
                 'organization' => $position['organization'],
                 'position' => $position['position'],
-                'total_votes' => $position['total_votes'],
                 'candidates' => $visible ? $position['candidates']->sortBy('id')->values()->map(fn ($candidate, $index) => [
                     'label' => 'Candidate '.chr(65 + $index),
                     'votes' => $candidate['votes'],
                     'percentage' => $candidate['percentage'],
+                    'progress' => $data['eligible'] > 0
+                        ? min(100, round($candidate['votes'] / $data['eligible'] * 100, 1))
+                        : 0,
                     'rank' => $candidate['rank'],
                     'tied' => $candidate['tied'],
                 ]) : [],

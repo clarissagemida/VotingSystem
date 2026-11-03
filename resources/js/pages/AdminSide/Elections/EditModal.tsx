@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { CalendarDays, Save, X } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';

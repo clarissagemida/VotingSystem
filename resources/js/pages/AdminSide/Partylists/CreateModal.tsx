@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Image as ImageIcon, Plus, Vote } from 'lucide-react';
+import { Image as ImageIcon, Plus } from 'lucide-react';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 
@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { EMPTY_FORM, PARTY_COLORS, PRIMARY, type Election, type Organization, type PartylistForm as PartylistFormValues } from '@/lib/partylists';
+import { EMPTY_FORM, PARTY_COLORS, type Election, type Organization, type PartylistForm as PartylistFormValues } from '@/lib/partylists';
 
 interface CreatePartylistModalProps {
     open: boolean;

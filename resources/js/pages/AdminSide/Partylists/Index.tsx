@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Building2, CheckCircle2, Edit3, Image as ImageIcon, Plus, Search, Trash2, UserRound, UserRoundPlus, Users, Vote, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -716,16 +716,6 @@ export default function Index({ partylists, independentCandidatesCount, election
                                                         : 'There are currently no registered partylists.'}
                                                 </p>
 
-                                                {!search && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCreateOpen(true)}
-                                                        className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#1B4332] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#143728] active:scale-95"
-                                                    >
-                                                        <Plus size={15} />
-                                                        Add First Partylist
-                                                    </button>
-                                                )}
                                             </div>
                                         </td>
                                     </tr>

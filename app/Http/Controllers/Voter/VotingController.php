@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Voter\Concerns\SortsByPositionOrder;
 use App\Models\Candidate;
 use App\Models\Election;
+use App\Models\User;
 use App\Models\Vote;
 use App\Support\VoterNotifier;
 use Illuminate\Http\Request;
@@ -25,12 +26,6 @@ class VotingController extends Controller
         Election $election
     ) {
         $user = $request->user();
-
-        abort_unless(
-            $election->eligibleVoters()->where('voter_id', $user->id)->exists(),
-            403,
-            'You are not eligible to vote in this election.'
-        );
 
         /*
          * Check if voter has already voted in this election.
@@ -127,12 +122,6 @@ class VotingController extends Controller
     ) {
         $user = $request->user();
 
-        abort_unless(
-            $election->eligibleVoters()->where('voter_id', $user->id)->exists(),
-            403,
-            'You are not eligible to vote in this election.'
-        );
-
         /*
          * Make sure election is ongoing.
          */
@@ -144,8 +133,7 @@ class VotingController extends Controller
 
         /*
          * Strict check: Voter cannot vote more than once in an election.
-         * Performed inside the transaction so the duplicate check and the
-         * ballot insertion are atomic, preventing concurrent double-voting.
+         * The votes check and ballot insertion run inside the transaction below.
          */
         $validated = $request->validate([
             'votes' => [
@@ -166,6 +154,11 @@ class VotingController extends Controller
             $election,
             $validated
         ) {
+            // Acquire a write lock so simultaneous ballot submissions serialize, including on SQLite.
+            User::query()
+                ->whereKey($user->id)
+                ->update(['updated_at' => DB::raw('updated_at')]);
+
             $alreadyVoted = Vote::query()
                 ->where('voter_id', $user->id)
                 ->where('election_id', $election->id)

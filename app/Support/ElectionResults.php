@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Election;
 use App\Models\OrganizationPosition;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
@@ -67,7 +68,7 @@ class ElectionResults
             ];
         })->sortBy(fn ($position) => [$position['position_order'], $position['organization'], $position['position']])->values();
 
-        $eligible = $election->eligibleVoters()->count();
+        $eligible = User::query()->where('role', 'voter')->count();
         $participated = $election->votes()->distinct('voter_id')->count('voter_id');
 
         return [

@@ -13,7 +13,7 @@ interface UserData {
     id: number;
     name: string;
     username: string;
-    email: string;
+    email: string | null;
     role: string;
 }
 
@@ -25,7 +25,7 @@ export default function ProfileInformationForm({ user }: Props) {
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
         name: user.name,
         username: user.username,
-        email: user.email,
+        email: user.email ?? '',
     });
 
     const submit: FormEventHandler = async (e) => {
@@ -65,7 +65,7 @@ export default function ProfileInformationForm({ user }: Props) {
                     </div>
                     <div>
                         <h2 className="text-sm font-semibold text-emerald-900">Profile Information</h2>
-                        <p className="text-xs text-emerald-600/60">Update your name, username, and email address</p>
+                        <p className="text-xs text-emerald-600/60">Update your name and username. Email is optional.</p>
                     </div>
                 </div>
             </div>
@@ -130,9 +130,8 @@ export default function ProfileInformationForm({ user }: Props) {
                             className="block w-full rounded-xl border-emerald-200 bg-emerald-50/50 pl-10 text-sm text-emerald-900 shadow-sm transition-colors focus:border-emerald-500 focus:bg-white focus:ring-emerald-500/20"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            required
                             autoComplete="username"
-                            placeholder="Enter your email"
+                            placeholder="Optional email address"
                         />
                     </div>
                     <InputError className="mt-1" message={errors.email} />

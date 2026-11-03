@@ -521,6 +521,8 @@ class AnalyticsController extends Controller
 
                     'name' => $candidate->candidate_name,
 
+                    'photo' => $candidate->photo,
+
                     'position' => $position,
 
                     'type' => $candidate->candidate_type ===
@@ -612,6 +614,8 @@ class AnalyticsController extends Controller
                             'id' => $candidate->id,
 
                             'name' => $candidate->candidate_name,
+
+                            'photo' => $candidate->photo,
 
                             'organization_id' => $candidate->organization_id,
 

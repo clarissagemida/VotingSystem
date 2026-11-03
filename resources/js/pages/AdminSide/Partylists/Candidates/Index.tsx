@@ -547,15 +547,6 @@ export default function Index({ partylist, candidates, positions, flash }: Props
                                                 {search ? 'Try changing your search keyword.' : 'No candidates have been assigned yet.'}
                                             </p>
 
-                                            {!search && !isPartylistFull && (
-                                                <Link
-                                                    href={`/admin/partylists/${partylist.id}/candidates/create`}
-                                                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#1B4332] px-5 py-3 text-sm font-black text-white transition hover:bg-[#143728]"
-                                                >
-                                                    <UserPlus size={17} />
-                                                    Add First Candidate
-                                                </Link>
-                                            )}
                                         </td>
                                     </tr>
                                 )}

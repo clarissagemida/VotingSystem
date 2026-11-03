@@ -46,7 +46,7 @@ class ProfileController extends Controller
                 Rule::unique('users')->ignore($request->user()->id),
             ],
             'email' => [
-                'required',
+                'nullable',
                 'string',
                 'email',
                 'max:255',
